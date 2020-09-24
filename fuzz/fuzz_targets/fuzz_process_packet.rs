@@ -1,13 +1,14 @@
 #![no_main]
 use discv5::enr::{CombinedKey, EnrBuilder};
 use discv5::packet::Packet;
-use discv5::{handler::Handler, Discv5ConfigBuilder, InboundPacket, TokioExecutor};
+use discv5::{handler::Handler, Discv5ConfigBuilder, TokioExecutor};
 use libfuzzer_sys::fuzz_target;
 use parking_lot::RwLock;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::{select, time::delay_for};
+use env_logger::init;
 
 fuzz_target!(|data: &[u8]| {
     if data.len() > 32 {
@@ -38,7 +39,7 @@ fuzz_target!(|data: &[u8]| {
                 .build(&key2)
                 .unwrap();
 
-            let (_exit_send, sender_handler, _, sender_socket) = Handler::spawn(
+            let (_exit_send, sender_handler, sender_socket) = Handler::spawn(
                 arc_rw!(sender_enr.clone()),
                 arc_rw!(key1),
                 sender_enr.udp_socket().unwrap(),
@@ -46,7 +47,7 @@ fuzz_target!(|data: &[u8]| {
             )
             .unwrap();
 
-            let (_exit_recv, recv_send, mut receiver_handler, _) = Handler::spawn(
+            let (_exit_recv, recv_send, mut receiver_handler) = Handler::spawn(
                 arc_rw!(receiver_enr.clone()),
                 arc_rw!(key2),
                 receiver_enr.udp_socket().unwrap(),
